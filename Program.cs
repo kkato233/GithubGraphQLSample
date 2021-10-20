@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace GithubGraphQL
 {
@@ -20,6 +21,20 @@ namespace GithubGraphQL
             InitConfig();
 
             var list = await GetGithubRepositoies();
+
+            // リポジトリの所有者による絞り込み
+            string ownerFilter = Configuration["ownerFilter"];
+            if (ownerFilter != null)
+            {
+                if (!ownerFilter.StartsWith("/"))
+                {
+                    ownerFilter = "/" + ownerFilter;
+                }
+                list = list
+                    .Where(r => r.Owner.ResourcePath == ownerFilter)
+                    .ToList();
+            }
+
             foreach (var item in list)
             {
                 Console.WriteLine($"{item.Name}");
@@ -44,8 +59,18 @@ namespace GithubGraphQL
         {
             public string Name { get; set; }
             public string Url { get; set; }
+
+            /// <summary>
+            /// /kkato233
+            /// </summary>
+            public Owner Owner { get; set; }
         }
 
+        public class Owner
+        {
+            public string Url { get; set; }
+            public string ResourcePath { get; set; }
+        }
         public class PageInfo
         {
             public string EndCursor { get; set; }
@@ -74,6 +99,10 @@ query {
         nodes {
             url
             name
+            owner {
+              url
+              resourcePath
+            }
         }
         pageInfo {
             endCursor
@@ -91,6 +120,10 @@ query {
         nodes {
             url
             name
+            owner {
+              url
+              resourcePath
+            }
         }
         pageInfo {
             endCursor
